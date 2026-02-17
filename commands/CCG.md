@@ -9,10 +9,10 @@
 ### 1. 检查配置
 
 ```bash
-python3 ~/.claude/skills/CCG/scripts/configure.py --check
+python3 ~/.ccg/scripts/configure.py --check
 ```
 
-如果未配置，使用 AskUserQuestion 向用户收集：
+如果返回 `"configured": false` 或脚本不存在，使用 AskUserQuestion 向用户收集：
 - API 密钥
 - Codex 端点（默认 `https://cc.orcai.cc/openai`）
 - Gemini 端点（默认 `https://cc.orcai.cc/gemini`）
@@ -20,8 +20,10 @@ python3 ~/.claude/skills/CCG/scripts/configure.py --check
 
 然后运行：
 ```bash
-python3 ~/.claude/skills/CCG/scripts/configure.py --setup --codex-url "URL" --codex-key "KEY" --gemini-url "URL" --gemini-key "KEY"
+python3 ~/.ccg/scripts/configure.py --setup --codex-url "URL" --codex-key "KEY" --gemini-url "URL" --gemini-key "KEY"
 ```
+
+如果 `~/.ccg/scripts/configure.py` 不存在，先从 CCG skill 的 `scripts/` 目录复制脚本到 `~/.ccg/scripts/`。
 
 ### 2. 判断使用哪个 Agent
 
@@ -34,12 +36,12 @@ python3 ~/.claude/skills/CCG/scripts/configure.py --setup --codex-url "URL" --co
 
 **Codex：**
 ```bash
-python3 ~/.claude/skills/CCG/scripts/codex_bridge.py --prompt "$ARGUMENTS" --workdir "$(pwd)" --full-auto --stream
+python3 ~/.ccg/scripts/codex_bridge.py --prompt "$ARGUMENTS" --workdir "$(pwd)" --full-auto --stream
 ```
 
 **Gemini：**
 ```bash
-python3 ~/.claude/skills/CCG/scripts/gemini_bridge.py --prompt "$ARGUMENTS" --workdir "$(pwd)" --yolo --stream
+python3 ~/.ccg/scripts/gemini_bridge.py --prompt "$ARGUMENTS" --workdir "$(pwd)" --yolo --stream
 ```
 
 ### 4. 返回结果

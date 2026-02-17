@@ -20,11 +20,13 @@ Usage:
 import argparse
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".ccg"
 CONFIG_FILE = CONFIG_DIR / "config.json"
+SCRIPTS_DIR = CONFIG_DIR / "scripts"
 
 DEFAULTS = {
     "codex": {
@@ -77,9 +79,18 @@ def check_config():
         print(json.dumps(result))
         return False
 
+    # Check if scripts are installed
+    scripts_ok = SCRIPTS_DIR.exists() and (SCRIPTS_DIR / "codex_bridge.py").exists()
+
     # Mask keys for output
     display = mask_keys(config)
-    result = {"configured": True, "config": display, "config_path": str(CONFIG_FILE)}
+    result = {
+        "configured": True,
+        "scripts_installed": scripts_ok,
+        "scripts_dir": str(SCRIPTS_DIR),
+        "config": display,
+        "config_path": str(CONFIG_FILE),
+    }
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return True
 
@@ -95,6 +106,27 @@ def mask_keys(config: dict) -> dict:
             elif key:
                 display[agent]["api_key"] = "***"
     return display
+
+
+def install_scripts(source_dir: Path = None):
+    """Copy bridge scripts to ~/.ccg/scripts/ for permanent access."""
+    if source_dir is None:
+        source_dir = Path(__file__).parent
+
+    SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    scripts = ["configure.py", "codex_bridge.py", "gemini_bridge.py", "setup_check.sh"]
+    copied = []
+    for script in scripts:
+        src = source_dir / script
+        dst = SCRIPTS_DIR / script
+        if src.exists():
+            shutil.copy2(src, dst)
+            if script.endswith(".sh"):
+                os.chmod(dst, 0o755)
+            copied.append(script)
+
+    return copied
 
 
 def setup_config(args):
@@ -128,8 +160,15 @@ def setup_config(args):
     # Also configure Codex CLI's config.toml
     configure_codex_toml(config["codex"])
 
+    # Install scripts to ~/.ccg/scripts/
+    copied = install_scripts()
+
     display = mask_keys(config)
-    print(json.dumps({"success": True, "config_path": str(CONFIG_FILE), "config": display}, indent=2))
+    result = {"success": True, "config_path": str(CONFIG_FILE), "config": display}
+    if copied:
+        result["scripts_installed"] = str(SCRIPTS_DIR)
+        result["scripts"] = copied
+    print(json.dumps(result, indent=2))
 
 
 def configure_codex_toml(codex_cfg: dict):
@@ -179,6 +218,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="Check if configured (JSON output)")
     parser.add_argument("--show", action="store_true", help="Show current config (keys masked)")
     parser.add_argument("--setup", action="store_true", help="Setup or update configuration")
+    parser.add_argument("--install-scripts", action="store_true", help="Install scripts to ~/.ccg/scripts/")
     parser.add_argument("--codex-url", default=None, help="Codex API endpoint URL")
     parser.add_argument("--codex-key", default=None, help="Codex API key")
     parser.add_argument("--codex-model", default=None, help="Codex model name")
@@ -188,7 +228,10 @@ def main():
 
     args = parser.parse_args()
 
-    if args.check:
+    if args.install_scripts:
+        copied = install_scripts()
+        print(json.dumps({"scripts_dir": str(SCRIPTS_DIR), "installed": copied}, indent=2))
+    elif args.check:
         sys.exit(0 if check_config() else 1)
     elif args.show:
         show_config()

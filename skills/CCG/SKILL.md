@@ -7,25 +7,39 @@ description: "Claude-Codex-Gemini: 将编码任务委派给 Codex CLI 和 Gemini
 
 将编码任务委派给 **Codex CLI** (OpenAI) 和 **Gemini CLI** (Google) 作为独立 agent 执行。
 
+## 脚本位置
+
+所有脚本安装在 `~/.ccg/scripts/` 目录下。如果该目录不存在，需要先执行初始化（见下方"首次使用设置"）。
+
 ## 首次使用设置（重要）
 
-使用任何 CCG 命令前，必须先检查是否已配置：
+### 第 0 步：安装脚本
+
+检查 `~/.ccg/scripts/codex_bridge.py` 是否存在。如果不存在，需要从本 SKILL.md 同级的 `scripts/` 目录复制：
 
 ```bash
-python3 skills/CCG/scripts/configure.py --check
+python3 "$(dirname "$(realpath "$0")")/scripts/configure.py" --install-scripts 2>/dev/null || python3 ~/.ccg/scripts/configure.py --install-scripts 2>/dev/null
 ```
 
-如果输出 `"configured": false`，需要执行以下设置流程：
+如果上述命令失败，手动定位 `configure.py`：找到本 SKILL.md 文件的路径，其同级 `scripts/` 目录中包含所有脚本。将整个 `scripts/` 目录内容复制到 `~/.ccg/scripts/`。
 
-### 第 1 步：检查 CLI 安装
+### 第 1 步：检查配置
 
 ```bash
-bash skills/CCG/scripts/setup_check.sh
+python3 ~/.ccg/scripts/configure.py --check
+```
+
+如果输出 `"configured": false`，继续下面的步骤。
+
+### 第 2 步：检查 CLI 安装
+
+```bash
+bash ~/.ccg/scripts/setup_check.sh
 ```
 
 自动检测并安装缺失的 CLI 工具（Codex CLI、Gemini CLI）。
 
-### 第 2 步：向用户询问配置
+### 第 3 步：向用户询问配置
 
 使用 AskUserQuestion 向用户收集以下信息：
 
@@ -36,10 +50,10 @@ bash skills/CCG/scripts/setup_check.sh
 
 如果用户提供同一个 API key，则 Codex 和 Gemini 共用。
 
-### 第 3 步：保存配置
+### 第 4 步：保存配置
 
 ```bash
-python3 skills/CCG/scripts/configure.py --setup \
+python3 ~/.ccg/scripts/configure.py --setup \
   --codex-url "端点地址" \
   --codex-key "密钥" \
   --codex-model "模型名" \
@@ -48,7 +62,7 @@ python3 skills/CCG/scripts/configure.py --setup \
   --gemini-model "模型名"
 ```
 
-配置保存到 `~/.ccg/config.json`，Codex CLI 配置自动写入 `~/.codex/config.toml`。
+配置保存到 `~/.ccg/config.json`，Codex CLI 配置自动写入 `~/.codex/config.toml`。脚本同时安装到 `~/.ccg/scripts/`。
 
 ## 何时使用哪个 Agent
 
@@ -58,10 +72,11 @@ python3 skills/CCG/scripts/configure.py --setup \
 ## 调用 Codex
 
 ```bash
-python3 skills/CCG/scripts/codex_bridge.py \
+python3 ~/.ccg/scripts/codex_bridge.py \
   --prompt "你的任务描述" \
   --workdir /项目路径 \
-  --full-auto
+  --full-auto \
+  --stream
 ```
 
 ### Codex 参数
@@ -81,10 +96,11 @@ python3 skills/CCG/scripts/codex_bridge.py \
 ## 调用 Gemini
 
 ```bash
-python3 skills/CCG/scripts/gemini_bridge.py \
+python3 ~/.ccg/scripts/gemini_bridge.py \
   --prompt "你的任务描述" \
   --workdir /项目路径 \
-  --yolo
+  --yolo \
+  --stream
 ```
 
 ### Gemini 参数
@@ -119,8 +135,8 @@ python3 skills/CCG/scripts/gemini_bridge.py \
 ## 查看 / 更新配置
 
 ```bash
-python3 skills/CCG/scripts/configure.py --show
-python3 skills/CCG/scripts/configure.py --setup --codex-model gpt-5.3-codex
+python3 ~/.ccg/scripts/configure.py --show
+python3 ~/.ccg/scripts/configure.py --setup --codex-model gpt-5.3-codex
 ```
 
 ## 默认模型

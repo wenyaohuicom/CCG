@@ -116,8 +116,40 @@ def run(args: argparse.Namespace) -> int:
             elif etype == "session.start" and "id" in event:
                 session_id = event["id"]
 
-            # Codex wraps events as {"type":"item.completed","item":{...}}
-            if etype == "item.completed" and item_type == "agent_message":
+            # --- Reasoning / Thinking events ---
+            if etype in ("reasoning", "thinking", "reasoning.delta"):
+                if args.stream:
+                    text = event.get("text", "") or event.get("content", "") or event.get("delta", "")
+                    if text:
+                        print(f"[thinking] {text}", flush=True)
+            elif etype == "item.completed" and item_type in ("reasoning", "thinking"):
+                if args.stream:
+                    text = item.get("text", "") or item.get("content", "")
+                    if text:
+                        print(f"[thinking] {text}", flush=True)
+            elif etype == "item.streaming" and item_type in ("reasoning", "thinking"):
+                if args.stream:
+                    text = item.get("text", "") or item.get("content", "")
+                    if text:
+                        print(f"[thinking] {text}", end="", flush=True)
+            # --- Reasoning summary (o-series models) ---
+            elif etype == "item.completed" and item_type == "reasoning_summary":
+                if args.stream:
+                    summaries = item.get("summary", item.get("text", ""))
+                    if isinstance(summaries, list):
+                        for s in summaries:
+                            text = s.get("text", str(s)) if isinstance(s, dict) else str(s)
+                            print(f"[reasoning] {text}", flush=True)
+                    elif summaries:
+                        print(f"[reasoning] {summaries}", flush=True)
+            # --- Content delta (streaming text chunks) ---
+            elif etype in ("content.delta", "response.output_text.delta"):
+                if args.stream:
+                    delta = event.get("delta", "") or event.get("text", "")
+                    if delta:
+                        print(delta, end="", flush=True)
+            # --- Agent messages ---
+            elif etype == "item.completed" and item_type == "agent_message":
                 messages.append(item)
                 content = item.get("text", "") or item.get("content", "")
                 if content and args.stream:
@@ -138,6 +170,9 @@ def run(args: argparse.Namespace) -> int:
                 content = event.get("text", "") or event.get("content", "")
                 if content and args.stream:
                     print(content, flush=True)
+            # --- Catch-all: dump unknown events in verbose mode ---
+            elif args.verbose:
+                print(f"[codex_bridge] event: {etype} item_type: {item_type}", file=sys.stderr)
 
         proc.wait()
         stderr_output = proc.stderr.read()

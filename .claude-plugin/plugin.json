@@ -1,7 +1,7 @@
 {
   "name": "CCG",
   "description": "Claude-Codex-Gemini: 将编码任务委派给 Codex CLI 和 Gemini CLI 作为独立 agent 执行。支持自动依赖检测安装、交互式配置、多轮会话、沙箱隔离、流式输出。",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "wenyaohuicom"
   },
